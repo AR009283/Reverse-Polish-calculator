@@ -27,6 +27,7 @@ int isFull(Stack *s) {
 
 /* Push value into stack */
 int push(Stack *s, double value) {
+
     if (isFull(s)) {
         printf("Stack overflow!\n");
         return 0;
@@ -38,6 +39,7 @@ int push(Stack *s, double value) {
 
 /* Pop value from stack */
 int pop(Stack *s, double *value) {
+
     if (isEmpty(s)) {
         printf("Stack underflow!\n");
         return 0;
@@ -49,6 +51,7 @@ int pop(Stack *s, double *value) {
 
 /* Show top value without removing */
 int peek(Stack *s, double *value) {
+
     if (isEmpty(s)) {
         printf("Stack is empty!\n");
         return 0;
@@ -60,6 +63,7 @@ int peek(Stack *s, double *value) {
 
 /* Print stack contents */
 void printStack(Stack *s) {
+
     if (isEmpty(s)) {
         printf("Stack is empty\n");
         return;
@@ -76,17 +80,21 @@ void printStack(Stack *s) {
 
 /* Perform arithmetic operation */
 int performOperation(Stack *s, char op) {
+
     double a, b, result;
 
     // Pop two numbers
-    if (!pop(s, &b)) return 0;
+    if (!pop(s, &b))
+        return 0;
+
     if (!pop(s, &a)) {
-        push(s, b); // restore
+        push(s, b); // Restore value
         return 0;
     }
 
-    // Calculate result
+    // Perform calculation
     switch (op) {
+
         case '+':
             result = a + b;
             break;
@@ -100,12 +108,17 @@ int performOperation(Stack *s, char op) {
             break;
 
         case '/':
+
             if (b == 0) {
                 printf("Cannot divide by zero!\n");
+
+                // Restore values
                 push(s, a);
                 push(s, b);
+
                 return 0;
             }
+
             result = a / b;
             break;
 
@@ -130,7 +143,7 @@ void processInstructions(Stack *s, char *instructions) {
 
     while (token != NULL) {
 
-        // Read number
+        // Read a number
         if (strcmp(token, "?") == 0) {
 
             double value;
@@ -138,12 +151,14 @@ void processInstructions(Stack *s, char *instructions) {
             printf("Enter number: ");
             scanf("%lf", &value);
 
+            getchar(); // Clear newline from input buffer
+
             push(s, value);
 
             printf("Pushed %.2f\n", value);
         }
 
-        // Print top value
+        // Display result
         else if (strcmp(token, "=") == 0) {
 
             double value;
@@ -153,7 +168,7 @@ void processInstructions(Stack *s, char *instructions) {
             }
         }
 
-        // Arithmetic operators
+        // Arithmetic operations
         else if (
             strcmp(token, "+") == 0 ||
             strcmp(token, "-") == 0 ||
@@ -164,20 +179,20 @@ void processInstructions(Stack *s, char *instructions) {
             performOperation(s, token[0]);
         }
 
-        // Quit instruction
+        // Quit command
         else if (strcmp(token, "q") == 0) {
             break;
         }
 
-        // Unknown command
+        // Invalid instruction
         else {
             printf("Unknown instruction: %s\n", token);
         }
 
-        // Show current stack
+        // Print stack after each operation
         printStack(s);
 
-        // Get next token
+        // Get next instruction
         token = strtok(NULL, " ");
     }
 }
@@ -186,7 +201,9 @@ void processInstructions(Stack *s, char *instructions) {
 int main() {
 
     Stack calculator;
+
     char input[512];
+
     int running = 1;
 
     // Initialize stack
@@ -207,12 +224,14 @@ int main() {
 
     while (running) {
 
-        // Clear stack for new calculation
+        // Reset stack for new calculation
         initStack(&calculator);
 
         printf("Enter instructions: ");
 
-        fgets(input, sizeof(input), stdin);
+        if (fgets(input, sizeof(input), stdin) == NULL) {
+            break;
+        }
 
         // Remove newline
         input[strcspn(input, "\n")] = '\0';
