@@ -2,254 +2,155 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_STACK_SIZE 100   // Maximum stack size
+#define MAX_STACK 100
 
-/* Stack structure */
 typedef struct {
-    double data[MAX_STACK_SIZE]; // Array to store numbers
-    int top;                     // Top index
+    double data[MAX_STACK];
+    int top;
 } Stack;
 
-/* Initialize stack */
-void initStack(Stack *s) {
+/* --- MANDATORY STACK FUNCTIONS --- */
+
+void stack_init(Stack *s) {
     s->top = -1;
 }
 
-/* Check if stack is empty */
-int isEmpty(Stack *s) {
+int stack_empty(const Stack *s) {
     return s->top == -1;
 }
 
-/* Check if stack is full */
-int isFull(Stack *s) {
-    return s->top == MAX_STACK_SIZE - 1;
+int stack_full(const Stack *s) {
+    return s->top == MAX_STACK - 1;
 }
 
-/* Push value into stack */
-int push(Stack *s, double value) {
-
-    if (isFull(s)) {
-        printf("Stack overflow!\n");
-        return 0;
+void stack_push(Stack *s, double value) {
+    if (stack_full(s)) {
+        printf("Error: Stack overflow\n");
+        exit(EXIT_FAILURE);
     }
-
     s->data[++(s->top)] = value;
-    return 1;
 }
 
-/* Pop value from stack */
-int pop(Stack *s, double *value) {
-
-    if (isEmpty(s)) {
-        printf("Stack underflow!\n");
+double stack_pop(Stack *s) {
+    if (stack_empty(s)) {
         return 0;
     }
-
-    *value = s->data[(s->top)--];
-    return 1;
+    return s->data[(s->top)--];
 }
 
-/* Show top value without removing */
-int peek(Stack *s, double *value) {
-
-    if (isEmpty(s)) {
-        printf("Stack is empty!\n");
+double stack_peek(const Stack *s) {
+    if (stack_empty(s)) {
         return 0;
     }
-
-    *value = s->data[s->top];
-    return 1;
+    return s->data[s->top];
 }
 
-/* Print stack contents */
+int is_number(const char *s) {
+    if (!s || *s == '\0') return 0;
+    char *p;
+    strtod(s, &p);
+    return *p == '\0';
+}
+
+/* --- HELPER FUNCTIONS --- */
+
 void printStack(Stack *s) {
-
-    if (isEmpty(s)) {
-        printf("Stack is empty\n");
+    if (stack_empty(s)) {
         return;
     }
-
     printf("Stack: ");
-
     for (int i = 0; i <= s->top; i++) {
         printf("%.2f ", s->data[i]);
     }
-
     printf("\n");
 }
 
-/* Perform arithmetic operation */
-int performOperation(Stack *s, char op) {
-
+void performOperation(Stack *s, char op) {
     double a, b, result;
 
-    // Pop two numbers
-    if (!pop(s, &b))
-        return 0;
-
-    if (!pop(s, &a)) {
-        push(s, b); // Restore value
-        return 0;
+    if (s->top < 1) {
+        printf("Error: Insufficient operands on stack.\n\n");
+        return;
     }
 
-    // Perform calculation
+    b = stack_pop(s);
+    a = stack_pop(s);
+
     switch (op) {
-
-        case '+':
-            result = a + b;
-            break;
-
-        case '-':
-            result = a - b;
-            break;
-
-        case '*':
-            result = a * b;
-            break;
-
+        case '+': result = a + b; break;
+        case '-': result = a - b; break;
+        case '*': result = a * b; break;
         case '/':
-
             if (b == 0) {
-                printf("Cannot divide by zero!\n");
-
-                // Restore values
-                push(s, a);
-                push(s, b);
-
-                return 0;
+                printf("Error: Division by zero\n\n");
+                stack_push(s, a);
+                stack_push(s, b);
+                return;
             }
-
             result = a / b;
             break;
-
-        default:
-            printf("Invalid operator!\n");
-            return 0;
+        default: return;
     }
 
-    // Push result back
-    push(s, result);
-
-    printf("%.2f %c %.2f = %.2f\n", a, op, b, result);
-
-    return 1;
+    stack_push(s, result);
+    /* Removed the explicit calculation line (a op b = result) per user request */
+    printStack(s);
+    printf("\n");
 }
 
-/* Process instruction sequence */
-void processInstructions(Stack *s, char *instructions) {
+/* --- MAIN FUNCTION --- */
 
-    // Split instructions by spaces
-    char *token = strtok(instructions, " ");
-
-    while (token != NULL) {
-
-        // Read a number
-        if (strcmp(token, "?") == 0) {
-
-            double value;
-
-            printf("Enter number: ");
-            scanf("%lf", &value);
-
-            getchar(); // Clear newline from input buffer
-
-            push(s, value);
-
-            printf("Pushed %.2f\n", value);
-        }
-
-        // Display result
-        else if (strcmp(token, "=") == 0) {
-
-            double value;
-
-            if (peek(s, &value)) {
-                printf("Result = %.2f\n", value);
-            }
-        }
-
-        // Arithmetic operations
-        else if (
-            strcmp(token, "+") == 0 ||
-            strcmp(token, "-") == 0 ||
-            strcmp(token, "*") == 0 ||
-            strcmp(token, "/") == 0
-        ) {
-
-            performOperation(s, token[0]);
-        }
-
-        // Quit command
-        else if (strcmp(token, "q") == 0) {
-            break;
-        }
-
-        // Invalid instruction
-        else {
-            printf("Unknown instruction: %s\n", token);
-        }
-
-        // Print stack after each operation
-        printStack(s);
-
-        // Get next instruction
-        token = strtok(NULL, " ");
-    }
-}
-
-/* Main function */
-int main() {
-
+int main(void) {
     Stack calculator;
-
-    char input[512];
-
-    int running = 1;
-
-    // Initialize stack
-    initStack(&calculator);
+    stack_init(&calculator);
+    char instr[10];
+    double val;
 
     printf("====================================\n");
     printf(" Reverse Polish Calculator (RPN)\n");
     printf("====================================\n");
-
     printf("Instructions:\n");
     printf("?  -> Enter number\n");
     printf("+  -> Add\n");
     printf("-  -> Subtract\n");
-    printf("*  -> Multiply\n");
+    printf("* -> Multiply\n");
     printf("/  -> Divide\n");
     printf("=  -> Show result\n");
     printf("q  -> Quit\n\n");
 
-    while (running) {
+    while (1) {
+        printf("Enter Instruction: ");
+        if (scanf("%s", instr) != 1) break;
 
-        // Reset stack for new calculation
-        initStack(&calculator);
+        if (strcmp(instr, "q") == 0) break;
 
-        printf("Enter instructions: ");
-
-        if (fgets(input, sizeof(input), stdin) == NULL) {
-            break;
+        if (strcmp(instr, "?") == 0) {
+            printf("Enter Number: ");
+            if (scanf("%lf", &val) == 1) {
+                stack_push(&calculator, val);
+                printf("Pushed %.2f\n", val);
+                printStack(&calculator);
+            }
+            printf("\n");
         }
-
-        // Remove newline
-        input[strcspn(input, "\n")] = '\0';
-
-        // Exit program
-        if (strcmp(input, "q") == 0) {
-            running = 0;
-            break;
+        else if (strcmp(instr, "=") == 0) {
+            if (!stack_empty(&calculator)) {
+                printf("Result = %.2f\n", stack_peek(&calculator));
+                printStack(&calculator);
+            } else {
+                printf("Error: Stack is empty\n");
+            }
+            printf("\n");
         }
-
-        printf("\nExecuting: %s\n", input);
-
-        processInstructions(&calculator, input);
-
-        printf("\n");
+        else if (strlen(instr) == 1 && strchr("+-*/", instr[0])) {
+            performOperation(&calculator, instr[0]);
+        }
+        else {
+            printf("Error: Unknown instruction\n\n");
+        }
     }
 
     printf("Goodbye!\n");
-
     return 0;
 }
+
